@@ -1714,6 +1714,14 @@ static int __mtp_setup(struct mtp_instance *fi_mtp)
 	INIT_WORK(&dev->send_file_work, send_file_work);
 	INIT_WORK(&dev->receive_file_work, receive_file_work);
 
+	cpu_freq_qos_queue = create_singlethread_workqueue("f_mtp_qos");
+	INIT_DELAYED_WORK(&cpu_freq_qos_work, update_qos_request);
+	pm_qos_add_request(&little_cpu_mtp_freq, PM_QOS_C0_CPUFREQ_MIN,
+				MIN_CPUFREQ);
+	pm_qos_add_request(&big_cpu_mtp_freq, PM_QOS_C1_CPUFREQ_MIN,
+				MIN_CPUFREQ);
+	pm_qos_add_request(&big_plus_cpu_mtp_freq, PM_QOS_C2_CPUFREQ_MIN,
+				MIN_CPUFREQ);
 	_mtp_dev = dev;
 
 	ret = misc_register(&mtp_device);
