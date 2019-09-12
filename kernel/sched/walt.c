@@ -26,6 +26,7 @@
 #include <linux/sched/core_ctl.h>
 #include <linux/sched/stat.h>
 #include <trace/events/sched.h>
+#include <linux/moduleparam.h>
 #include "sched.h"
 #include "walt.h"
 
@@ -120,7 +121,8 @@ static void release_rq_locks_irqrestore(const cpumask_t *cpus,
 #define MAX_SCHED_RAVG_WINDOW 1000000000
 
 /* 1 -> use PELT based load stats, 0 -> use window-based load stats */
-unsigned int __read_mostly walt_disabled = 0;
+unsigned int __read_mostly walt_disabled = 1;
+module_param(walt_disabled, uint, 0644);
 
 __read_mostly unsigned int sysctl_sched_cpu_high_irqload = (10 * NSEC_PER_MSEC);
 
