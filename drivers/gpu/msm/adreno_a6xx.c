@@ -1714,11 +1714,32 @@ static const char *a6xx_iommu_fault_block(struct adreno_device *adreno_dev,
 	else if (client_id != 3)
 		return fault_block[client_id];
 
-	mutex_lock(&device->mutex);
+	/*
+	 * Smmu driver takes a vote on CX gdsc before calling the kgsl pagefault
+	 * handler. If there is contention for device mutex in this path and the
+	 * dispatcher fault handler is holding this lock, trying to turn off CX
+	 * gdsc will fail during the reset. So to avoid blocking here, try to
+	 * lock device mutex and return if it fails.
+	 */
+	if (!mutex_trylock(&device->mutex))
+		return "UCHE";
+
+	if (!kgsl_state_is_awake(device)) {
+		mutex_unlock(&device->mutex);
+		return "UCHE";
+	}
+
 	kgsl_regread(device, A6XX_UCHE_CLIENT_PF, &uche_client_id);
 	mutex_unlock(&device->mutex);
 
-	return uche_client[uche_client_id & A6XX_UCHE_CLIENT_PF_CLIENT_ID_MASK];
+	/* Ignore the value if the gpu is in IFPC */
+	if (uche_client_id == 0x5c00bd00)
+		return "UCHE";
+
+	uche_client_id &= A6XX_UCHE_CLIENT_PF_CLIENT_ID_MASK;
+	snprintf(str, sizeof(str), "UCHE: %s",
+			uche_client[uche_client_id][mid - 1]);
+	return str;
 }
 
 static void a6xx_cp_callback(struct adreno_device *adreno_dev, int bit)
