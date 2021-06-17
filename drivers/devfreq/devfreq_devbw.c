@@ -25,8 +25,6 @@
 #include <linux/mutex.h>
 #include <linux/interrupt.h>
 #include <linux/devfreq.h>
-#include <linux/devfreq_boost.h>
-#include <linux/slab.h>
 #include <linux/of.h>
 #include <trace/events/power.h>
 #include <linux/msm-bus.h>
@@ -174,16 +172,6 @@ int devfreq_add_devbw(struct device *dev)
 	if (IS_ERR(d->df)) {
 		msm_bus_scale_unregister_client(d->bus_client);
 		return PTR_ERR(d->df);
-	}
-
-	if (!strcmp(dev_name(dev), "soc:qcom,cpu-llcc-ddr-bw"))
-		devfreq_register_boost_device(DEVFREQ_CPU_LLCC_DDR_BW, d->df);
-
-	if (cpubw_flag) {
-		cpubw_flag = false;
-		qos_request_value.max_state = p->max_state;
-		qos_request_value.min_devfreq = 0;
-		qos_request_value.max_devfreq = p->max_state;
 	}
 
 	return 0;
