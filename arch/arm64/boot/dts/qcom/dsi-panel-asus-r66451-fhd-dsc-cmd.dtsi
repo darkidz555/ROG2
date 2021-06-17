@@ -73,7 +73,7 @@
 				qcom,mdss-dsi-v-bottom-border = <0>;
 				qcom,mdss-dsi-panel-jitter = <0xa 0x1>;
 
-				qcom,mdss-dsi-panel-framerate = <120>;
+				qcom,mdss-dsi-panel-framerate = <144>;
 				//qcom,mdss-mdp-transfer-time-us = <7200>;
 				qcom,mdss-dsi-panel-clockrate = <830000000>;
 				
