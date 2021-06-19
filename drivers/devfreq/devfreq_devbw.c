@@ -174,9 +174,17 @@ int devfreq_add_devbw(struct device *dev)
 		return PTR_ERR(d->df);
 	}
 
-	if (!strcmp(dev_name(dev), "soc:qcom,cpubw"))
+	if (!strcmp(dev_name(dev), "soc:qcom,cpu-cpu-llcc-bw")) {
 		devfreq_register_boost_device(DEVFREQ_MSM_CPUBW, d->df);
+		pr_info("Added devfreq boost device %s\n",dev_name(dev));
+	}
 
+	if (cpubw_flag) {
+		cpubw_flag = false;
+		qos_request_value.max_state = p->max_state;
+		qos_request_value.min_devfreq = 0;
+		qos_request_value.max_devfreq = p->max_state;
+	}
 	return 0;
 }
 
