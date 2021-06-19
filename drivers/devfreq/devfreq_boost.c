@@ -9,32 +9,6 @@
 #include <linux/msm_drm_notify.h>
 #include <linux/input.h>
 #include <linux/slab.h>
-#include <linux/moduleparam.h>
-#include <linux/version.h>
-
-/* The sched_param struct is located elsewhere in newer kernels */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
-#include <uapi/linux/sched/types.h>
-#endif
-
-static unsigned short flex_boost_duration __read_mostly = CONFIG_FLEX_DEVFREQ_BOOST_DURATION_MS;
-static unsigned short input_boost_duration __read_mostly = CONFIG_DEVFREQ_INPUT_BOOST_DURATION_MS;
-static unsigned int devfreq_thread_prio __read_mostly = CONFIG_DEVFREQ_THREAD_PRIORITY;
-static unsigned int devfreq_boost_freq_low  __read_mostly = CONFIG_DEVFREQ_MSM_CPUBW_BOOST_FREQ_LOW;
-static unsigned int devfreq_boost_freq __read_mostly = CONFIG_DEVFREQ_MSM_CPUBW_BOOST_FREQ;
-
-module_param(flex_boost_duration, short, 0644);
-module_param(input_boost_duration, short, 0644);
-module_param(devfreq_boost_freq, uint, 0644);
-module_param(devfreq_boost_freq_low, uint, 0644);
-
-enum {
-	SCREEN_ON,
-	INPUT_BOOST,
-	FLEX_BOOST,
-	WAKE_BOOST,
-	MAX_BOOST
-};
 
 struct boost_dev {
 	struct workqueue_struct *wq;
@@ -186,23 +160,12 @@ static void devfreq_unboost_all(struct df_boost_drv *d)
 		cancel_work_sync(&b->input_boost);
 		cancel_delayed_work_sync(&b->input_unboost);
 
-	mutex_lock(&df->lock);
-	if (!test_bit(SCREEN_ON, &state)) {
-		df->min_freq = df->profile->freq_table[0];
-		df->max_boost = test_bit(WAKE_BOOST, &state) ? 
-					true :
-					false;
-	} else {
-		df->min_freq = test_bit(FLEX_BOOST, &state) ?
-			min(devfreq_boost_freq_low, df->max_freq) :
-			df->profile->freq_table[0];
-		df->min_freq = test_bit(INPUT_BOOST, &state) ?
-			min(devfreq_boost_freq, df->max_freq) :
-			df->profile->freq_table[0];
-			df->max_boost = test_bit(MAX_BOOST, &state);
+		mutex_lock(&df->lock);
+		df->max_boost = false;
+		df->min_freq = devfreq_abs_min_freq(b);
+		update_devfreq(df);
+		mutex_unlock(&df->lock);
 	}
-	update_devfreq(df);
-	mutex_unlock(&df->lock);
 }
 
 static void devfreq_input_boost(struct work_struct *work)
