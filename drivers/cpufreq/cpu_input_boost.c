@@ -127,8 +127,6 @@ struct boost_drv {
 	unsigned int max_boost_ms;
 	unsigned long state;
 	unsigned long stune_state;
-	atomic_long_t cluster1_boost_expires;
-	atomic_long_t cluster2_boost_expires;
 };
 
 static void input_unboost_worker(struct work_struct *work);
@@ -341,8 +339,6 @@ static void __cpu_input_boost_kick_cluster2(struct boost_drv *b,
 
 void cpu_input_boost_kick_cluster1(unsigned int duration_ms)
 {
-	unsigned long boost_jiffies = msecs_to_jiffies(duration_ms);
-	unsigned long curr_expires, new_expires;
 	struct boost_drv *b = &boost_drv_g;
 
 	if (duration_ms == 0)
@@ -350,24 +346,12 @@ void cpu_input_boost_kick_cluster1(unsigned int duration_ms)
 
 	if (test_bit(SCREEN_OFF, &b->state))
 		return;
-
-	do {
-		curr_expires = atomic_long_read(&b->cluster1_boost_expires);
-		new_expires = jiffies + boost_jiffies;
-
-		/* Skip this boost if there's a longer boost in effect */
-		if (time_after(curr_expires, new_expires))
-			return;
-	} while (atomic_long_cmpxchg(&b->cluster1_boost_expires, curr_expires,
-				     new_expires) != curr_expires);
 	
 	__cpu_input_boost_kick_cluster1(b, duration_ms);
 }
 
 void cpu_input_boost_kick_cluster2(unsigned int duration_ms)
 {
-	unsigned long boost_jiffies = msecs_to_jiffies(duration_ms);
-	unsigned long curr_expires, new_expires;
 	struct boost_drv *b = &boost_drv_g;
 
 	if (little_only || duration_ms == 0)
@@ -375,16 +359,6 @@ void cpu_input_boost_kick_cluster2(unsigned int duration_ms)
 
 	if (test_bit(SCREEN_OFF, &b->state))
 		return;
-
-	do {
-		curr_expires = atomic_long_read(&b->cluster2_boost_expires);
-		new_expires = jiffies + boost_jiffies;
-
-		/* Skip this boost if there's a longer boost in effect */
-		if (time_after(curr_expires, new_expires))
-			return;
-	} while (atomic_long_cmpxchg(&b->cluster2_boost_expires, curr_expires,
-				     new_expires) != curr_expires);
 
 	__cpu_input_boost_kick_cluster2(b, duration_ms);
 }
@@ -416,8 +390,6 @@ static void __cpu_input_boost_kick_cluster2_wake(struct boost_drv *b,
 
 void cpu_input_boost_kick_cluster1_wake(unsigned int duration_ms)
 {
-	unsigned long boost_jiffies = msecs_to_jiffies(duration_ms);
-	unsigned long curr_expires, new_expires;
 	struct boost_drv *b = &boost_drv_g;
 
 	if (duration_ms == 0)
@@ -425,24 +397,12 @@ void cpu_input_boost_kick_cluster1_wake(unsigned int duration_ms)
 
 	if (!test_bit(SCREEN_OFF, &b->state))
 		return;
-
-	do {
-		curr_expires = atomic_long_read(&b->cluster1_boost_expires);
-		new_expires = jiffies + boost_jiffies;
-
-		/* Skip this boost if there's a longer boost in effect */
-		if (time_after(curr_expires, new_expires))
-			return;
-	} while (atomic_long_cmpxchg(&b->cluster1_boost_expires, curr_expires,
-				     new_expires) != curr_expires);
 
 	__cpu_input_boost_kick_cluster1_wake(b, duration_ms);
 }
 
 void cpu_input_boost_kick_cluster2_wake(unsigned int duration_ms)
 {
-	unsigned long boost_jiffies = msecs_to_jiffies(duration_ms);
-	unsigned long curr_expires, new_expires;
 	struct boost_drv *b = &boost_drv_g;
 
 	if (duration_ms == 0)
@@ -450,16 +410,6 @@ void cpu_input_boost_kick_cluster2_wake(unsigned int duration_ms)
 
 	if (!test_bit(SCREEN_OFF, &b->state))
 		return;
-
-	do {
-		curr_expires = atomic_long_read(&b->cluster2_boost_expires);
-		new_expires = jiffies + boost_jiffies;
-
-		/* Skip this boost if there's a longer boost in effect */
-		if (time_after(curr_expires, new_expires))
-			return;
-	} while (atomic_long_cmpxchg(&b->cluster2_boost_expires, curr_expires,
-				     new_expires) != curr_expires);
 
 	__cpu_input_boost_kick_cluster2_wake(b, duration_ms);
 }
