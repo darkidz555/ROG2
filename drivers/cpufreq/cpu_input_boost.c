@@ -658,10 +658,10 @@ static int msm_drm_notifier_cb(struct notifier_block *nb,
 		return NOTIFY_OK;
 
 	/* Boost when the screen turns on and unboost when it turns off */
-	if (*blank == FB_BLANK_UNBLANK) {
-		cpu_input_boost_kick_cluster1_wake(1000);
-		cpu_input_boost_kick_cluster2_wake(1000);	
-		set_bit(SCREEN_ON, &b->state);
+	if (*blank == MSM_DRM_BLANK_UNBLANK_CUST) {	
+		cpu_input_boost_kick_cluster1_wake(500);
+		cpu_input_boost_kick_cluster2_wake(500);	
+		clear_bit(SCREEN_OFF, &b->state);
 	} else {
 		set_bit(SCREEN_OFF, &b->state);
 	}
@@ -840,9 +840,9 @@ static int __init cpu_input_boost_init(void)
 		goto unregister_cpu_notif;
 	}
 
-	b->fb_notif.notifier_call = fb_notifier_cb;
-	b->fb_notif.priority = INT_MAX-2;
-	ret = fb_register_client(&b->fb_notif);
+	b->msm_drm_notif.notifier_call = msm_drm_notifier_cb;
+	b->msm_drm_notif.priority = INT_MAX-2;
+	ret = msm_drm_register_client(&b->msm_drm_notif);
 	if (ret) {
 		pr_err("Failed to register msm_drm notifier, err: %d\n", ret);
 		goto unregister_handler;
